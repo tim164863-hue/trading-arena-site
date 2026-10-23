@@ -1,0 +1,66 @@
+name: update-and-deploy
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: arena-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore history from data branch
+        run: |
+          if git ls-remote --exit-code origin data >/dev/null 2>&1; then
+            git fetch origin data
+            git show origin/data:history.json > history.json || true
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pull OKX data (read-only endpoints, one shot)
+        env:
+          OKX_API_KEY_1: ${{ secrets.OKX_API_KEY_1 }}
+          OKX_SECRET_1: ${{ secrets.OKX_SECRET_1 }}
+          OKX_PASSPHRASE_1: ${{ secrets.OKX_PASSPHRASE_1 }}
+          OKX_API_KEY_2: ${{ secrets.OKX_API_KEY_2 }}
+          OKX_SECRET_2: ${{ secrets.OKX_SECRET_2 }}
+          OKX_PASSPHRASE_2: ${{ secrets.OKX_PASSPHRASE_2 }}
+          LOOP_SECONDS: "0"
+        run: python updater.py
+      - name: Save history to data branch
+        run: |
+          mkdir -p /tmp/d && cp data.json history.json /tmp/d/
+          git config user.name "arena-bot"
+          git config user.email "arena-bot@users.noreply.github.com"
+          git checkout --orphan data-tmp
+          git rm -rf --cached . >/dev/null
+          git clean -fdx -e history.json -e data.json >/dev/null || true
+          cp /tmp/d/* .
+          git add data.json history.json
+          git commit -qm "data $(date -u +%FT%TZ)"
+          git push -qf origin data-tmp:data
+      - name: Build site
+        run: |
+          mkdir -p _site
+          git show ${{ github.sha }}:index.html > _site/index.html
+          cp /tmp/d/data.json /tmp/d/history.json _site/
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

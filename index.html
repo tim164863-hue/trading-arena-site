@@ -32,10 +32,10 @@ table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}
 th{color:var(--c);text-align:left;padding:2px;border-bottom:1px solid var(--c);font-weight:400}
 td{padding:2px;border-bottom:1px solid #161d30;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#0b0e17;border-radius:8px}
-.tt{table-layout:auto;font-size:12px;min-width:640px}
-.tt th{font-family:inherit;letter-spacing:1px;font-size:10px;padding:8px 6px;border-bottom:1px solid var(--c);white-space:nowrap}
-.tt td{padding:9px 6px;color:#dfe7f2;white-space:nowrap;overflow:visible;font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}
-.tt td.mk{white-space:normal;max-width:120px;word-break:break-all}
+.tt{table-layout:auto;font-size:10px;width:100%}
+.tt th{font-family:inherit;letter-spacing:0;font-size:8.5px;padding:6px 2px;border-bottom:1px solid var(--c);white-space:nowrap}
+.tt td{padding:6px 2px;color:#dfe7f2;white-space:nowrap;overflow:visible;font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}
+.tt td.mk{white-space:normal;line-height:1.25}.tt td.mk small{display:block;color:#678;font-size:8px}
 .tt td.dt small{display:block;color:#678;font-size:9px}
 .tt td.pos{color:#3dff8a;text-shadow:0 0 6px #3dff8a88}.tt td.neg{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d88}
 .badge{background:var(--y);color:#000;padding:0 4px;font-size:9px}
@@ -46,7 +46,7 @@ td{padding:2px;border-bottom:1px solid #161d30;white-space:nowrap;overflow:hidde
 <div class="meta" id="meta">// 連線中...</div>
 <div class="cards" id="cards"></div>
 <div class="panel"><h3>資產變化 // EQUITY</h3><div class="cw"><canvas id="eqc"></canvas></div></div>
-<div class="panel" style="border-color:var(--c)"><h3 style="color:var(--c)">最近成交 // TRADES</h3><div class="tw"><table class="tt"><thead><tr><th>TIME（台灣）</th><th>TRADER</th><th>MARKET</th><th>SIDE</th><th>PRICE</th><th>QTY</th><th>PNL</th><th>NOTE</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel" style="border-color:var(--c)"><h3 style="color:var(--c)">最近成交 // TRADES</h3><div class="tw"><table class="tt"><thead><tr><th>TIME</th><th>TRADER</th><th>MARKET</th><th>SIDE</th><th>PRICE</th><th>QTY</th><th>PNL</th><th>手續費</th></tr></thead><tbody id="rows"></tbody></table></div></div>
 </div><script>
 const TZ='Asia/Taipei',col={"交易員-1":"#00f0ff","交易員-2":"#ff2bd6"};let chart;
 const tick=()=>clk.textContent=new Date().toLocaleString('zh-TW',{timeZone:TZ,hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' 台灣';tick();setInterval(tick,1000);
@@ -75,7 +75,7 @@ async function load(){
   <div class="row"><span>今日筆數</span><span>${dc}</span></div><div class="row"><span>近1小時</span><span>${hr}</span></div></div>`}
  cards.innerHTML=h;
  const R=d.trades.slice().reverse();
- rows.innerHTML=R.length?R.map(x=>`<tr><td class="dt"><small>${x.time.slice(5,10)}</small>${x.time.slice(11,19)}</td><td>${x.trader.replace('-','')}</td><td class="mk">${x.market}</td><td>${x.side}</td><td>${x.price}</td><td>${x.qty}</td><td class="${cls(x.pnl)}">${(+x.pnl).toFixed(4).replace(/^-?0\.0000$/,'0.0000')}</td><td style="color:#aab">手續費 ${+(x.fee??0).toPrecision(6)}</td></tr>`).join(''):'<tr><td colspan=8 style="text-align:center;color:#789">尚無成交</td></tr>';
+ rows.innerHTML=R.length?R.map(x=>`<tr><td class="dt"><small>${x.time.slice(5,10)}</small>${x.time.slice(11,19)}</td><td>${x.trader.replace('-','')}</td><td class="mk">${x.market.replace('-USDT-SWAP','')}<small>USDT-SWAP</small></td><td class="${x.side.includes('多')||x.side=='買入'?'pos':'neg'}">${x.side}</td><td>${px(x.price)}</td><td>${x.qty}</td><td class="${cls(x.pnl)}">${(+x.pnl).toFixed(4).replace(/^-?0\.0000$/,'0.0000')}</td><td style="color:#aab">${(+(x.fee??0)).toFixed(4)}</td></tr>`).join(''):'<tr><td colspan=8 style="text-align:center;color:#789">尚無成交</td></tr>';
  const start=Object.values(d.traders)[0]?.start||50;
  const ds=Object.entries(H).map(([n,p])=>({label:n,data:p.map(([x,y])=>({x,y})),borderColor:col[n],backgroundColor:col[n]+'22',fill:true,tension:.3,pointRadius:0,borderWidth:1.5}));
  ds.push({label:'起始',data:ds.length&&ds[0].data.length?[{x:ds[0].data[0].x,y:start},{x:Date.now(),y:start}]:[],borderColor:'#fcee0a88',borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false});

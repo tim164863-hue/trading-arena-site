@@ -1,38 +1,48 @@
 name: update-and-deploy
+# loop job: one long run (~5h45m) that refreshes the site every 6 min, then dispatches its successor.
+# watchdog job (cron): restarts the loop only if no loop run is active/queued. Cron lateness no longer matters.
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
-  push:
-    branches: [main]
+    inputs:
+      reason:
+        description: "why (manual / chain / watchdog)"
+        required: false
+        default: manual
 permissions:
   contents: write
-  pages: write
-  id-token: write
-concurrency:
-  group: arena-update
-  cancel-in-progress: false
+  actions: write
 jobs:
-  update:
+  watchdog:
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Start loop if none active
+        run: |
+          active=$(gh run list --workflow update.yml --event workflow_dispatch --limit 20 \
+            --json databaseId,status --jq '[.[] | select(.status=="in_progress" or .status=="queued" or .status=="pending" or .status=="waiting")] | length')
+          echo "active loop runs: $active"
+          if [ "$active" = "0" ]; then gh workflow run update.yml --ref main -f reason=watchdog; echo "dispatched new loop"; fi
+  loop:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    concurrency:
+      group: arena-loop
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Restore history from data branch
-        run: |
-          if git ls-remote --exit-code origin data >/dev/null 2>&1; then
-            git fetch origin data
-            git show origin/data:history.json > history.json || true
-          fi
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Pull OKX data (read-only endpoints, one shot)
+      - name: Update loop
         env:
+          GH_TOKEN: ${{ github.token }}
           OKX_API_KEY_1: ${{ secrets.OKX_API_KEY_1 }}
           OKX_SECRET_1: ${{ secrets.OKX_SECRET_1 }}
           OKX_PASSPHRASE_1: ${{ secrets.OKX_PASSPHRASE_1 }}
@@ -40,27 +50,4 @@ jobs:
           OKX_SECRET_2: ${{ secrets.OKX_SECRET_2 }}
           OKX_PASSPHRASE_2: ${{ secrets.OKX_PASSPHRASE_2 }}
           LOOP_SECONDS: "0"
-        run: python updater.py
-      - name: Save history to data branch
-        run: |
-          mkdir -p /tmp/d && cp data.json history.json /tmp/d/
-          git config user.name "arena-bot"
-          git config user.email "arena-bot@users.noreply.github.com"
-          git checkout --orphan data-tmp
-          git rm -rf --cached . >/dev/null
-          git clean -fdx -e history.json -e data.json >/dev/null || true
-          cp /tmp/d/* .
-          git add data.json history.json
-          git commit -qm "data $(date -u +%FT%TZ)"
-          git push -qf origin data-tmp:data
-      - name: Build site
-        run: |
-          mkdir -p _site
-          git show ${{ github.sha }}:index.html > _site/index.html
-          cp /tmp/d/data.json /tmp/d/history.json _site/
-          touch _site/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deploy
-        uses: actions/deploy-pages@v4
+        run: bash .github/loop.sh

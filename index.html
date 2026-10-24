@@ -35,7 +35,7 @@ td{padding:2px;border-bottom:1px solid #161d30;white-space:nowrap;overflow:hidde
 @media(min-width:800px){body{font-size:13px}.card{padding:12px}.card h2{font-size:18px}table{font-size:12px}.panel h3{font-size:13px}.meta{font-size:11px}}
 </style></head><body><div class="wrap">
 <div class="top"><h1>TRADING ARENA</h1><span class="clock" id="clk">--</span></div>
-<div class="sub">🎯 24H +50% ・ 禁現貨 ・ 週期不限 ・ 槓桿無上限 ・ 打到歸零 ・ 開賽 10/22 17:09 <span id="badge"></span></div>
+<span id="badge" style="display:none"></span>
 <div class="meta" id="meta">// 連線中...</div>
 <div class="cards" id="cards"></div>
 <div class="panel"><h3>資產變化 // EQUITY</h3><div class="cw"><canvas id="eqc"></canvas></div></div>
@@ -73,9 +73,12 @@ async function load(){
  const ds=Object.entries(H).map(([n,p])=>({label:n,data:p.map(([x,y])=>({x,y})),borderColor:col[n],backgroundColor:col[n]+'22',fill:true,tension:.3,pointRadius:0,borderWidth:1.5}));
  ds.push({label:'起始',data:ds.length&&ds[0].data.length?[{x:ds[0].data[0].x,y:start},{x:Date.now(),y:start}]:[],borderColor:'#fcee0a88',borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false});
  if(chart){chart.data.datasets=ds;chart.update('none');return}
- chart=new Chart(eqc,{type:'line',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,interaction:{mode:'nearest',intersect:false},scales:{x:{type:'linear',ticks:{color:'#9ab',font:{size:9},maxTicksLimit:6,callback:v=>new Date(v).toLocaleTimeString('zh-TW',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false})},grid:{color:'#1a1f33'}},y:{ticks:{color:'#9ab',font:{size:9},maxTicksLimit:5},grid:{color:'#1a1f33'}}},plugins:{legend:{labels:{color:'#d8f6ff',boxWidth:10,font:{size:9}}}}}});
+ chart=new Chart(eqc,{type:'line',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,interaction:{mode:'nearest',intersect:false},events:['mousemove','mouseout','touchstart','touchmove'],scales:{x:{type:'linear',ticks:{color:'#9ab',font:{size:9},maxTicksLimit:6,callback:v=>new Date(v).toLocaleTimeString('zh-TW',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false})},grid:{color:'#1a1f33'}},y:{ticks:{color:'#9ab',font:{size:9},maxTicksLimit:5},grid:{color:'#1a1f33'}}},plugins:{legend:{labels:{color:'#d8f6ff',boxWidth:10,font:{size:9}}},tooltip:{callbacks:{title:()=>''}}}}});
 }
 let retryT=null;
+let tipOn=false;
+function hideTip(){if(chart){chart.setActiveElements([]);chart.tooltip.setActiveElements([],{x:0,y:0});chart.update('none')}tipOn=false}
+document.addEventListener('click',e=>{const c=document.getElementById('eqc');if(!chart||!c)return;if(e.target!==c){hideTip();return}if(tipOn){hideTip()}else{tipOn=true}},true);
 const rc=document.createElement('div');rc.id='reconn';rc.textContent='重新連線中…';
 rc.style.cssText='position:fixed;right:8px;bottom:8px;z-index:99;padding:3px 8px;font-size:11px;border-radius:4px;background:#0a0d18cc;color:#fcee0a;border:1px solid #fcee0a55;display:none;pointer-events:none';
 document.body.appendChild(rc);

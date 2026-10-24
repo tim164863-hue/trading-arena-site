@@ -58,6 +58,15 @@ def offline(status="offline"):
     return {"start": START, "equity": None, "positions": [], "fees_total": None, "fills_total": 0,
             "funding_total": None, "status": status}, []
 
+def thin(p, now):
+    """Keep every point from the last 24h; older points thinned to one per 5 min (full history kept for replay)."""
+    cut, out, last = now - 86400000, [], None
+    for t, v in p:
+        if t >= cut: out.append([t, v]); continue
+        b = t // 300000
+        if b != last: out.append([t, v]); last = b
+    return out
+
 def run():
     traders, trades, errors = {}, [], []
     for i, n in enumerate(NAMES, 1):
@@ -76,7 +85,7 @@ def run():
     for n, t in traders.items():
         p = H.setdefault(n, [])
         if t["status"] not in ("live", "waiting") or t["equity"] is None: continue
-        p.append([now, round(t["equity"], 3)]); H[n] = p[-3000:]
+        p.append([now, round(t["equity"], 3)]); H[n] = thin(p, now)
     for fn, obj in (("data.json", data), ("history.json", H)):
         tmp = os.path.join(DIR, fn + ".tmp"); json.dump(obj, open(tmp, "w"), ensure_ascii=False); os.replace(tmp, os.path.join(DIR, fn))
     print(time.strftime("%F %T"), "ok", {n: t["status"] for n, t in traders.items()}, errors)

@@ -13,6 +13,7 @@ if git fetch -q origin data 2>/dev/null; then git show origin/data:history.json 
 
 iteration() {
   git fetch -q origin main || echo "::warning::fetch main failed (using last index.html)"
+  git show origin/main:updater.py > /tmp/updater.new 2>/dev/null && python -m py_compile /tmp/updater.new && cp /tmp/updater.new updater.py
   timeout 120 python updater.py || { echo "::warning::updater failed"; return 1; }
   rm -rf /tmp/pub && mkdir -p /tmp/pub
   git show origin/main:index.html > /tmp/pub/index.html || return 1

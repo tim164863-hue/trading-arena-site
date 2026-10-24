@@ -38,6 +38,7 @@ td{padding:2px;border-bottom:1px solid #161d30;white-space:nowrap;overflow:hidde
 .tt td.mk{white-space:normal;line-height:1.25}.tt td.mk small{display:block;color:#678;font-size:8px}
 .tt td.dt small{display:block;color:#678;font-size:9px}
 .tt td.pos{color:#3dff8a;text-shadow:0 0 6px #3dff8a88}.tt td.neg{color:#ff4d6d;text-shadow:0 0 6px #ff4d6d88}
+.tt td.tm{position:relative;cursor:default}.tt td.tm:hover::after,.tt td.tm.on::after{content:attr(data-d);position:absolute;left:0;top:-14px;background:#1b2238;color:#fcee0a;font-size:9px;padding:1px 4px;border-radius:3px;z-index:5;white-space:nowrap}
 .badge{background:var(--y);color:#000;padding:0 4px;font-size:9px}
 @media(min-width:800px){body{font-size:13px}.card{padding:12px}.card h2{font-size:18px}table{font-size:12px}.panel h3{font-size:13px}.meta{font-size:11px}}
 </style></head><body><div class="wrap">
@@ -75,7 +76,7 @@ async function load(){
   <div class="row"><span>今日筆數</span><span>${dc}</span></div><div class="row"><span>近1小時</span><span>${hr}</span></div></div>`}
  cards.innerHTML=h;
  const R=d.trades.slice().reverse();
- rows.innerHTML=R.length?R.map(x=>`<tr><td>${x.time.slice(11,16)} <span style="color:#789">${x.time.slice(5,10)}</span></td><td style="color:${col[x.trader]||'#fff'}">${x.trader.replace('交易員-','T')}</td><td>${x.market.replace('-USDT-SWAP','')}</td><td class="${x.side.includes('多')||x.side=='買入'?'pos':'neg'}">${x.side}</td><td>${px(x.price)}</td><td>${x.qty.replace(' 張','')}</td><td class="${cls(x.pnl)}">${(+x.pnl).toFixed(4).replace(/^-?0\.0000$/,'0.0000')}</td><td style="color:#aab">${(+(x.fee??0)).toFixed(3)}</td></tr>`).join(''):'<tr><td colspan=8 style="text-align:center;color:#789">尚無成交</td></tr>';
+ rows.innerHTML=R.length?R.map(x=>`<tr><td class="tm" data-d="${x.time.slice(0,10)}">${x.time.slice(11,19)}</td><td style="color:${col[x.trader]||'#fff'}">${x.trader.replace('交易員-','T')}</td><td>${x.market.replace('-USDT-SWAP','')}</td><td class="${x.side.includes('多')||x.side=='買入'?'pos':'neg'}">${x.side}</td><td>${px(x.price)}</td><td>${x.qty.replace(' 張','')}</td><td class="${cls(x.pnl)}">${(+x.pnl).toFixed(4).replace(/^-?0\.0000$/,'0.0000')}</td><td style="color:#aab">${(+(x.fee??0)).toFixed(3)}</td></tr>`).join(''):'<tr><td colspan=8 style="text-align:center;color:#789">尚無成交</td></tr>';
  const start=Object.values(d.traders)[0]?.start||50;
  const ds=Object.entries(H).map(([n,p])=>({label:n,data:p.map(([x,y])=>({x,y})),borderColor:col[n],backgroundColor:col[n]+'22',fill:true,tension:.3,pointRadius:0,borderWidth:1.5}));
  ds.push({label:'起始',data:ds.length&&ds[0].data.length?[{x:ds[0].data[0].x,y:start},{x:Date.now(),y:start}]:[],borderColor:'#fcee0a88',borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false});
@@ -84,6 +85,7 @@ async function load(){
 }
 let retryT=null;
 let tipOn=false;
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('td.tm');document.querySelectorAll('td.tm.on').forEach(x=>{if(x!==t)x.classList.remove('on')});if(t)t.classList.toggle('on')});
 function hideTip(){if(chart){chart.setActiveElements([]);chart.tooltip.setActiveElements([],{x:0,y:0});chart.update('none')}tipOn=false}
 document.addEventListener('click',e=>{const c=document.getElementById('eqc');if(!chart||!c)return;if(e.target!==c){hideTip();return}if(tipOn){hideTip()}else{tipOn=true}},true);
 const rc=document.createElement('div');rc.id='reconn';rc.textContent='重新連線中…';

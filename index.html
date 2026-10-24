@@ -114,7 +114,7 @@ function rpStart(){const S={};let a=Infinity,b=-Infinity,lo=Infinity,hi=-Infinit
  for(const[n,p]of Object.entries(H0)){if(!p.length)continue;const q=thin(p,2500).map(([x,y])=>({x,y}));S[n]=q;a=Math.min(a,q[0].x);b=Math.max(b,q[q.length-1].x);for(const v of q){lo=Math.min(lo,v.y);hi=Math.max(hi,v.y)}}
  if(!isFinite(a))return;lo=Math.min(lo,R1S);hi=Math.max(hi,curStart());const pd=(hi-lo)*.06||1;
  rp={S,a,b,lo:Math.floor(lo-pd),hi:Math.ceil(hi+pd),T:a,play:true,last:0};
- rpb.classList.add('on');rpb.textContent='■ 即時';rpc.style.display='flex';rpi.style.display='flex';rpp.textContent='❚❚';vw.style.display='none';hideTip();rpDraw();requestAnimationFrame(rpLoop)}
+ rpb.classList.add('on');rpb.textContent='■ 即時';rpc.style.display='flex';rpp.textContent='❚❚';vw.style.display='none';hideTip();rpDraw();requestAnimationFrame(rpLoop)}
 function rpStop(){rp=null;rpb.classList.remove('on');rpb.textContent='▶ 播放';rpc.style.display='none';rpi.style.display='none';vw.style.display='';hideTip();drawLive()}
 function rpLoop(ts){if(!rp||!rp.play){if(rp)rp.last=0;return}if(rp.last){rp.T+=(rp.b-rp.a)*(ts-rp.last)/(BASE_MS/rpSpeed)}rp.last=ts;
  if(rp.T>=rp.b){rp.T=rp.b;rp.play=false;rp.last=0;rpp.textContent='↺'}rpDraw();if(rp.play)requestAnimationFrame(rpLoop)}

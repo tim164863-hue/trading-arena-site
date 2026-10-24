@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """TRADING ARENA updater — READ-ONLY OKX v5 endpoints. Never places orders.
 Env: OKX_API_KEY_1 / OKX_SECRET_1 / OKX_PASSPHRASE_1 (交易員-1), same with _2 (交易員-2).
-Optional: START_EQUITY (default 50), LOOP_SECONDS (0 = run once).
+Optional: START_EQUITY (default 100), LOOP_SECONDS (0 = run once).
 Traders without keys are reported as status "offline" (未連線) with no data. No fake data is ever generated."""
 import os, json, time, hmac, hashlib, base64, datetime, urllib.request, urllib.parse
 BASE = "https://www.okx.com"; DIR = os.path.dirname(os.path.abspath(__file__))
-TZ = datetime.timezone(datetime.timedelta(hours=8)); START = float(os.getenv("START_EQUITY", "50"))
+TZ = datetime.timezone(datetime.timedelta(hours=8)); START = float(os.getenv("START_EQUITY", "100"))
 NAMES = ["交易員-1", "交易員-2"]
 
 def creds(i):
